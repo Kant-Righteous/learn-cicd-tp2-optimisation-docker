@@ -6,7 +6,8 @@
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **0. Baseline** | `node-app:v0-baseline` | **1.92 GB** | - | ~61.1s | Image initiale non optimisée |
 | **1. Dockerignore** | `node-app:v1-dockerignore` | **1.93 GB** | - | ~16.5s | Ajout du `.dockerignore` et filtrage du contexte |
-| **2. Alpine Base** | `node-app:v2-alpine` | **222 MB** | **-88.5% (~1.71 GB)** | ~16.1s | Passage à `node:20-alpine` et suppression des paquets build Debian |
+| **2. Alpine Base** | `node-app:v2-alpine` | **222 MB** | -88.5% (~1.71 GB) | ~16.1s | Passage à `node:20-alpine` |
+| **3. Layer Caching** | `node-app:v3-cache` | **222 MB** | -88.5% (~1.71 GB) | **0.7s (Cache Hit)** | Optimisation de l'ordre des layers pour exploiter le cache Docker |
 
 ---
 
@@ -46,3 +47,17 @@
 * **Preuve** :
 
 ![Alpine Base Screenshot](docs/screenshots/03.png)
+
+### Étape 3 : Optimisation du cache des couches (Layer Caching)
+
+* **Problème identifié** : La directive `COPY . /app` était placée avant `RUN npm install`. À chaque modification d'un fichier source, la couche de copie changeait, invalidant complètement le cache Docker et forçant une réinstallation complète des dépendances.
+* **Solution appliquée** :
+  1. Séparation de la copie des métadonnées de dépendances (`COPY package*.json ./`).
+  2. Exécution de l'installation (`RUN npm install`) avant de copier le reste du code.
+  3. Copie du code source applicatif (`COPY . /app`).
+* **Impact & Analyse** :
+  * Lors d'une modification du code source applicatif sans changement des dépendances, la couche d'installation est récupérée instantanément du cache (`CACHED`).
+  * Le temps de build chute drastiquement de **16.1s à 0.7s**.
+* **Preuve** :
+
+![Layer Caching Screenshot](docs/screenshots/04.png)
