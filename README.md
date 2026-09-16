@@ -2,10 +2,11 @@
 
 ## Tableau Comparatif des Optimisations
 
-| Étape               | Tag de l'image             | Taille (Disk Usage) | Temps de Build | Contexte Envoyé | Description de l'optimisation                                  |
-|:------------------- |:-------------------------- |:------------------- |:-------------- |:--------------- |:-------------------------------------------------------------- |
-| **0. Baseline**     | `node-app:v0-baseline`     | **1.92 GB**         | ~61.1s         | 10.69 MB        | Image initiale non optimisée                                   |
-| **1. Dockerignore** | `node-app:v1-dockerignore` | **1.93 GB**         | **~16.5s**     | **46.63 KB**    | Ajout du `.dockerignore` et suppression du `COPY node_modules` |
+| Étape | Tag de l'image | Taille (Disk Usage) | Réduction vs Baseline | Temps de Build | Description de l'optimisation |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **0. Baseline** | `node-app:v0-baseline` | **1.92 GB** | - | ~61.1s | Image initiale non optimisée |
+| **1. Dockerignore** | `node-app:v1-dockerignore` | **1.93 GB** | - | ~16.5s | Ajout du `.dockerignore` et filtrage du contexte |
+| **2. Alpine Base** | `node-app:v2-alpine` | **222 MB** | **-88.5% (~1.71 GB)** | ~16.1s | Passage à `node:20-alpine` et suppression des paquets build Debian |
 
 ---
 
@@ -32,3 +33,16 @@
 * **Preuve** :
 
 ![Dockerignore Screenshot](docs/screenshots/02.png)
+
+### Étape 2 : Migration vers une image de base légère (Alpine)
+
+* **Problème identifié** : L'image de départ utilisait `node:latest` (basée sur une distribution Debian complète de plus de 1 GB) combinée à l'installation inutile d'outils de compilation C++ (`build-essential`) non requis en production.
+* **Solution appliquée** :
+  1. Remplacement de `node:latest` par `node:20-alpine` (système minimaliste de quelques mégaoctets).
+  2. Suppression des commandes Debian incompatibles et superflues (`apt-get install -y build-essential...`)[cite: 3].
+* **Impact & Analyse** :
+  * La taille de l'image chute drastiquement de **1.93 GB à 222 MB** (gain de **~1.71 GB**).
+  * La surface d'attaque en matière de sécurité est considérablement réduite grâce à la suppression de centaines de binaires et utilitaires système superflus.
+* **Preuve** :
+
+![Alpine Base Screenshot](docs/screenshots/03.png)
