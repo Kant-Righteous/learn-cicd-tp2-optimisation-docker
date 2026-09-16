@@ -68,14 +68,14 @@
 * **Problèmes identifiés** :
   1. L'application incluait des dépendances de développement inutiles en production (ex. outils de dev, nodemon).
   2. Le conteneur s'exécutait avec les privilèges administrateur `root` (`USER root`), posant un risque majeur de sécurité et d'évasion de conteneur.
-  3. Présence de scripts redondants (`RUN npm run build`) et de ports inutilisés (`EXPOSE 4000 5000`).
+  3. Présence de scripts redondants (`RUN npm run build`) et de ports déclarés inutilisés (`EXPOSE 4000 5000`).
 * **Solutions appliquées** :
   1. Utilisation de `ENV NODE_ENV=production` et `RUN npm ci --only=production` pour n'installer que le strict nécessaire à l'exécution.
   2. Remplacement de l'utilisateur par l'utilisateur système standard sans privilèges `USER node`.
-  3. Nettoyage des directives mortes (`npm run build` supprimé, seul le port 3000 reste exposé).
+  3. Nettoyage des directives mortes (`npm run build` supprimé) et restriction du port exposé au seul port réellement utilisé (`EXPOSE 3000`).
 * **Impact & Analyse** :
   * Le **Content Size** chute de **484 MB à 53.1 MB**, prouvant l'éradication des dépendances superflues.
-  * La surface de vulnérabilité est minimisée grâce à l'exécution sous l'utilisateur non-privilégié `node`.
+  * La surface de vulnérabilité est minimisée grâce à l'exécution sous l'utilisateur non-privilégié `node` et la fermeture des ports superflus.
 * **Preuve** :
 
 ![Production Cleanup Screenshot](docs/screenshots/05.png)
